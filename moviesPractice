@@ -1,0 +1,94 @@
+const express = require("express");
+const path = require("path");
+const app = express();
+const { open } = require("sqlite");
+const sqlite3 = require("sqlite3");
+const dbPath = path.join(__dirname, "moviesData.db");
+
+let db = null;
+const initializeDBAndServer = async () => {
+  try {
+    db = await open({
+      filename: dbPath,
+      driver: sqlite3.Database,
+    });
+    app.listen(3000, () => {
+      console.log("Server Running at http://localhost:3000/");
+    });
+  } catch (e) {
+    console.log("DB Error:${e.messsage}");
+    process.exit(1);
+  }
+};
+initializeDBAndServer();
+
+const convertObjectFromResponse = (dbObject) => {
+  return {
+    movie_Id: dbObject.movie_Id,
+    director_Id: dbObject.director_Id,
+    movie_Name: dbObject.movie_name,
+    lead_actor: dbObject.lead_actor,
+  };
+};
+
+app.get("/movies/", async (require, response) => {
+  const getMoviesQuery = `
+    SELECT 
+    *
+    FROM
+     movie;`;
+  const moviesArray = await db.all(getMoviesQuery);
+  response.send(
+    moviesArray.map((eachMovie) => convertObjectFromResponse(eachMovie))
+  );
+});
+
+module.exports = app;
+
+app.post("/movies/", (require, response) => {
+  const { directorId, movieName, lead_actor } = request.body;
+  const postMovieQuery = `
+    INSERT INTO
+    movie(directorId,movieName,leadActor)
+    VALUES('${director_id}','${movie_name}','${lead_actor}');`;
+  response.send("Movie Successfully Added");
+});
+
+app.get("/movies/:movieId/", async (require, response) => {
+  const { movie_Id } = request.body;
+  const getMovieId = `
+    SELECT movieId,directorId,movieName,leadActor 
+    FROM movie
+    ORDER BY movie_id;`;
+  const movieIdArray = await db.all(getMovieId);
+  response.send(
+    movieIdArray.map((eachMovie) => convertObjectFromResponse(eachMovie))
+  );
+});
+
+app.get("/movies/:movieId/", (require, response) => {
+  const { movie_Id } = request.body;
+  const deleteMovieQuery = `
+    DELETE movieId,directorId,movieName,leadActor
+    FROM movie
+    ORDER BY movie_id;`;
+  response.send("Movie Removed");
+});
+
+app.get("/directors/", async (require, response) => {
+  const getDirectorsQuery = `
+    SELECT * FROM
+    director;`;
+  const directorArray = await db.all(getDirectorsQuery);
+  response.send(directorArray.map(convertObjectFromResponse(eachDirector)));
+});
+
+app.get("/directors/:directorId/movies/", async (require, response) => {
+  const { director_Id } = request.body;
+  const getDirectorsQuery = `
+    SELECT * FROM
+    movie ORDER BY
+    director_Id;`;
+  const directorArray = await db.all(getDirectorsQuery);
+  response.send(directorArray.map(convertObjectFromResponse(eachDirector)));
+});
